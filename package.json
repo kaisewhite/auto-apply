@@ -14,7 +14,7 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "build:extension": "next build && cp -r extension/* out/"
+    "build:extension": "next build && mkdir -p out/next && cp -r out/_next/* out/next/ && rm -rf out/_next && cp -r extension/* out/"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
