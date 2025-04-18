@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## API Documentation (Swagger)
+
+This project uses Swagger UI to document its API endpoints.
+
+To view the API documentation:
+
+1.  Run the development server (`npm run dev`).
+2.  Navigate to `/api-doc` in your browser (e.g., `http://localhost:3000/api-doc`).
+
+The Swagger specification is generated using `next-swagger-doc` and can be found at the `/api/doc` endpoint.
+# auto-apply
