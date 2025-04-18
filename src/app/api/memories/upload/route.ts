@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Force static for extension builds
+export const dynamic = "force-static";
 import { handleFileUpload } from "./uploadHandler"; // Import the handler
 
 /**

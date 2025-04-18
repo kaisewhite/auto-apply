@@ -7,6 +7,10 @@
  *       200:
  *         description: Hello World!
  */
+
+// Force static for extension builds
+export const dynamic = "force-static";
+
 export async function GET(_request: Request) {
   // Do whatever you want
   return new Response("Hello World!", {

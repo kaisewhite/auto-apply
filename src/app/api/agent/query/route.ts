@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Force static for extension builds
+export const dynamic = "force-static";
 import { langbaseClient } from "@/lib/langbaseClient";
 // Import correct types suggested by linter
 import type { MemoryRetrieveResponse, RunResponse } from "langbase";
