@@ -67,9 +67,12 @@ export default function Page() {
                   <CardTitle>Activity Log</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* Content removed - Placeholder for future log display */}
+                  {/* 
                   <div className="h-40 overflow-y-auto rounded border border-dashed bg-muted p-2 text-sm text-muted-foreground">
                     <p>Agent activity will appear here...</p>
                   </div>
+                   */}
                 </CardContent>
               </Card>
             </div>
