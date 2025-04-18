@@ -49,22 +49,31 @@ async function getSystemPrompt(chunks: Chunk[]): Promise<string> {
     sourceList += `[${id}] ${sources[id]}\n`;
   }
 
-  const systemPrompt = `You're a helpful AI assistant.
-    You will assist users with their queries.
+  const systemPrompt = `You're an AI assistant helping a user fill out job application forms.
 
-    Always ensure that you provide accurate and to the point information.
-    Below is some CONTEXT for you to answer the questions. ONLY answer from the CONTEXT. CONTEXT consists of multiple information chunks. Each chunk has a source mentioned at the end.
+You will be given a resume broken into context chunks. ONLY answer using the provided CONTEXT. Each chunk has a source noted at the end.
 
-    For each piece of response you provide, cite the source in brackets like so: [number].
+Your goal is to generate a short, accurate, and professional answer to each form field or question.
 
-    At the end of the answer, always list each source with its corresponding number and provide the document name, like so: [1] Filename.ext.
+Respond in a way that would make sense if the user were typing this themselves in a form field.
 
-    If you don't know the answer based on the CONTEXT, say "I cannot answer this question based on the provided context."
+NEVER fabricate information. If the answer cannot be found in the CONTEXT, say:
+"I cannot answer this question based on the provided context."
 
-    CONTEXT:
-    ---
-    ${chunksText}
-    ${sourceList}`;
+When answering:
+- Keep it brief and directly relevant to the question.
+- Use full sentences only if required.
+- DO NOT summarize the entire resume — just answer the specific question.
+- DO NOT repeat the question in your response.
+
+For every factual statement you make, cite the chunk source like this: [1].
+
+At the end of your response, include a source list with the number and file name, like so: [1] resume.md.
+
+CONTEXT:
+---
+${chunksText}
+${sourceList}`;
 
   return systemPrompt;
 }
@@ -95,7 +104,7 @@ async function getSystemPrompt(chunks: Chunk[]): Promise<string> {
  *               query:
  *                 type: string
  *                 description: The user's query for the support agent.
- *                 example: "Who is Kaise White?"
+ *                 example: "What is your most recent job title?"
  *               userId:
  *                 type: string
  *                 description: The unique ID for the user, used to identify the correct agent pipe and memory.
@@ -103,7 +112,7 @@ async function getSystemPrompt(chunks: Chunk[]): Promise<string> {
  *               topK:
  *                 type: integer
  *                 description: (Optional) The maximum number of context chunks to retrieve.
- *                 default: 4
+ *                 default: 10
  *     responses:
  *       200:
  *         description: Successfully generated response from the agent.
