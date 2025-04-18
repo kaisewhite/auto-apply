@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.42.0",
+    "langbase": "^1.1.55",
     "lucide-react": "^0.492.0",
     "next": "15.3.1",
     "next-swagger-doc": "^0.4.1",
