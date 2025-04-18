@@ -1,3 +1,6 @@
+'use client'; // Required for useState
+
+import { useState, useEffect, useRef } from 'react'; // Added useEffect, useRef
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -11,7 +14,102 @@ import { Button } from "@/components/ui/button"
 // Placeholder for an icon component (replace with actual library like lucide-react)
 // import { UploadCloud } from 'lucide-react';
 
+// Define the shape of the WebSocket message payload
+interface LogMessage {
+  type: 'status' | 'error' | 'success' | 'log'; // Add more types as needed
+  message: string;
+  timestamp: string;
+}
+
 export default function Page() {
+  const [isVncLoading, setIsVncLoading] = useState(true);
+  // Assuming noVNC is served at this default path. Adjust if necessary.
+  const vncUrl = "http://localhost:6080/vnc_lite.html";
+  const [activityLog, setActivityLog] = useState<LogMessage[]>([]);
+  const logEndRef = useRef<HTMLDivElement>(null); // Ref to scroll to bottom
+
+  // --- WebSocket Connection Effect ---
+  useEffect(() => {
+    const wsUrl = `ws://localhost:8080`; // Use the same port as the server
+    console.log(`Attempting to connect WebSocket: ${wsUrl}`);
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      // Optionally send an initial message or identifier
+      setActivityLog(prev => [...prev, { type: 'status', message: 'Log stream connected.', timestamp: new Date().toLocaleTimeString() }]);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data: { type: string; message: string } = JSON.parse(event.data.toString());
+        console.log('WebSocket message received:', data);
+        const newLog: LogMessage = {
+          type: data.type as LogMessage['type'], // Basic type assertion
+          message: data.message,
+          timestamp: new Date().toLocaleTimeString()
+        };
+        setActivityLog(prev => [...prev, newLog]);
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error, event.data);
+        setActivityLog(prev => [...prev, { type: 'error', message: 'Received unparseable log message.', timestamp: new Date().toLocaleTimeString() }]);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setActivityLog(prev => [...prev, { type: 'error', message: 'WebSocket connection error.', timestamp: new Date().toLocaleTimeString() }]);
+    };
+
+    ws.onclose = (event) => {
+      console.log('WebSocket disconnected:', event.reason);
+      setActivityLog(prev => [...prev, { type: 'status', message: `Log stream disconnected${event.reason ? `: ${event.reason}` : ''}.`, timestamp: new Date().toLocaleTimeString() }]);
+      // Optional: Implement reconnection logic here if desired
+    };
+
+    // Cleanup function to close WebSocket on component unmount
+    return () => {
+      console.log('Closing WebSocket connection.');
+      ws.close();
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // --- Scroll to bottom of log ---
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activityLog]); // Scroll whenever log updates
+
+  // --- Launch Browser Function --- (Basic fetch call)
+  const handleLaunchBrowser = async () => {
+    const urlInput = document.getElementById('jobUrl') as HTMLInputElement;
+    const url = urlInput?.value;
+    if (!url) {
+      setActivityLog(prev => [...prev, { type: 'error', message: 'Please enter a Job Application URL.', timestamp: new Date().toLocaleTimeString() }]);
+      return;
+    }
+
+    setActivityLog(prev => [...prev, { type: 'status', message: `Requesting browser launch for ${url}...`, timestamp: new Date().toLocaleTimeString() }]);
+    try {
+      const response = await fetch('/api/launch-browser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP error! Status: ${response.status}`);
+      }
+      // Success message will come via WebSocket
+      console.log('Launch request successful:', result);
+      // setActivityLog(prev => [...prev, { type: 'status', message: result.message || 'Launch request sent.', timestamp: new Date().toLocaleTimeString() }]);
+    } catch (error: any) {
+      console.error('Failed to launch browser:', error);
+      setActivityLog(prev => [...prev, { type: 'error', message: `Launch failed: ${error.message}`, timestamp: new Date().toLocaleTimeString() }]);
+    }
+  };
+
   return (
     <SidebarProvider
       style={
@@ -58,7 +156,7 @@ export default function Page() {
                      <li>https://jobs.lever.co/example/12345</li>
                      <li>https://careers.example.com/apply</li>
                   </ul>
-                  <Button className="mt-4 w-full">Launch Browser</Button>
+                  <Button className="mt-4 w-full" onClick={handleLaunchBrowser}>Launch Browser</Button>
                 </CardContent>
               </Card>
 
@@ -66,27 +164,41 @@ export default function Page() {
                 <CardHeader>
                   <CardTitle>Activity Log</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {/* Content removed - Placeholder for future log display */}
-                  {/* 
-                  <div className="h-40 overflow-y-auto rounded border border-dashed bg-muted p-2 text-sm text-muted-foreground">
-                    <p>Agent activity will appear here...</p>
-                  </div>
-                   */}
+                <CardContent className="flex-1 overflow-y-auto p-2 text-xs">
+                   {/* Log messages area */}
+                   {activityLog.map((log, index) => (
+                     <p key={index} className={`mb-1 ${log.type === 'error' ? 'text-red-500' : log.type === 'success' ? 'text-green-500' : 'text-muted-foreground'}`}>
+                       <span className="font-mono">[{log.timestamp}]</span> {log.message}
+                     </p>
+                   ))}
+                   {/* Empty state */}
+                   {activityLog.length === 0 && (
+                      <p className="text-muted-foreground italic">Waiting for activity...</p>
+                   )}
+                   {/* Ref for scrolling */}
+                   <div ref={logEndRef} />
                 </CardContent>
               </Card>
             </div>
 
             <div className="flex-1">
-              <Card className="h-full">
+              <Card className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle>Live Browser / Output</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p>Right card content goes here (e.g., embedded browser, results).</p>
-                  <div className="mt-4 h-96 rounded border border-dashed bg-muted flex items-center justify-center">
-                    <span className="text-muted-foreground">Browser Area</span>
-                  </div>
+                <CardContent className="flex-1 flex flex-col p-0">
+                  {isVncLoading && (
+                    <div className="flex flex-1 items-center justify-center bg-muted">
+                      <p className="text-muted-foreground">Connecting to browser session...</p>
+                    </div>
+                  )}
+                  <iframe
+                    src={vncUrl}
+                    onLoad={() => setIsVncLoading(false)}
+                    title="noVNC Session"
+                    className={`flex-1 w-full h-full border-0 ${isVncLoading ? 'hidden' : 'block'}`}
+                    style={{ overflow: 'hidden' }}
+                  ></iframe>
                 </CardContent>
               </Card>
             </div>
